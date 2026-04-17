@@ -29,7 +29,6 @@ export async function getPRDiff(
     )
   ).data;
 
-  console.debug(diff);
   if (!diff) {
     throw new Error("Failed to get PR diff");
   }

@@ -88,6 +88,11 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
 
       try {
         if (action === "pr_summary") {
+          typedFastify.log.info(
+            { taskId },
+            "Starting PR summary generation task"
+          );
+
           // Use a consistent prefix for the comment, optionally with a unique suffix to allow multiple comments if updates are not desired
           let prefix = prSummartCommentPrefix;
           if (!prSummaryCommentUpdateExisting) {
@@ -161,6 +166,11 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
             "PR Summary task completed successfully (Comment posted)"
           );
         } else if (action === "pr_title_suggestion") {
+          typedFastify.log.info(
+            { taskId },
+            "Starting PR title suggestion task"
+          );
+
           if (!task.prTitle) {
             typedFastify.log.warn(
               { taskId },

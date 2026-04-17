@@ -45,7 +45,7 @@ const gemini = new GoogleGenAI({
 // Create Fastify server with TypeBox type provider
 const fastify = Fastify({
   logger: {
-    level: "debug",
+    level: process.env.LOG_LEVEL || "info",
   },
 }).withTypeProvider<TypeBoxTypeProvider>();
 
