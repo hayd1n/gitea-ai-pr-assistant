@@ -7,7 +7,8 @@ A lightweight, robust Fastify webhook server that integrates Google Gemini AI wi
 - **🤖 AI PR Summary**: Automatically generates a concise summary of the Pull Request based on the git diff, helping reviewers understand the changes quickly.
 - **🏷️ PR Title Suggestion**: Evaluates the original PR title against the [Conventional Commits](https://www.conventionalcommits.org/) specification and the actual code changes. Suggests a better title if the original one is inadequate.
 - **🚥 Built-in Task Queue**: Uses an in-memory task queue to process AI requests sequentially, preventing you from hitting API rate limits if multiple PRs are updated simultaneously.
-- **🛠️ Fully Customizable Prompts**: Automatically generates editable prompt and template files upon first run, allowing you to tweak the AI's behavior and formatting without changing the source code.
+- **⌨ Chat Commands**: Trigger summaries and title suggestions manually via PR comments with a customizable bot prefix and file exclusion parameters.
+- **🛠 Fully Customizable Prompts**: Automatically generates editable prompt and template files upon first run, allowing you to tweak the AI's behavior and formatting without changing the source code.
 - **🔍 Queue Monitoring**: Provides a dedicated endpoint to inspect currently processing and queued tasks.
 - **⚙️ Feature Toggles**: Easily enable or disable specific AI functions via environment variables.
 
@@ -47,10 +48,11 @@ GITEA_TOKEN="your_gitea_personal_access_token"
 GEMINI_API_KEY="your_google_gemini_api_key"
 GEMINI_MODEL="gemma-4-31b-it" # Optional
 
-# Feature Flags (Optional, both default to true)
+# Feature Flags & Settings (Optional)
 
 ENABLE_PR_SUMMARY=true
 ENABLE_PR_TITLE_SUGGESTION=true
+BOT_COMMAND_PREFIX="@ai-bot"   # Default prefix to trigger bot via comments
 ```
 
 ## Usage
@@ -79,7 +81,28 @@ The server runs on port `3000` by default. Make sure this port is accessible to 
 4. Under **Trigger On**, choose **Custom Events...** and select:
    - **Pull Request** (Triggers when a PR is opened)
    - **Pull Request Synchronized** (Triggers when new commits are pushed to the PR branch)
+   - **Issue Comment** (Triggers when a user leaves a command for the bot on the PR)
 5. Save and test the webhook.
+
+### Chat Commands & Manual Triggers
+
+You can explicitly ask the bot to process a PR by adding a comment. The bot uses the prefix defined in the `BOT_COMMAND_PREFIX` environment variable (defaults to `@ai-bot`).
+
+**Available Commands:**
+
+- `@ai-bot /summary`: Triggers the PR summary task.
+- `@ai-bot /suggest-title`: Evaluates the current PR title and suggests an improvement.
+
+**Excluding Files from the Diff (`--exclude`)**
+You can append `--exclude \`pattern\`` to reduce token usage and omit generated or irrelevant files from the AI's context.
+
+Example:
+
+```markdown
+@ai-bot /summary --exclude `*-lock.json, data/*, *test*`
+```
+
+*Note: Always use backticks (\`) around your patterns to prevent Gitea's Markdown parser from accidentally interpreting asterisks (`*`) as italics.*
 
 ## Customizing Prompts & Templates
 
