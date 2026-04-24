@@ -24,6 +24,7 @@
     "@google/genai": "^1.50.1",
     "@sinclair/typebox": "^0.34.49",
     "fastify": "^5.8.4",
-    "gitea-js": "^1.23.0"
+    "gitea-js": "^1.23.0",
+    "ignore": "^7.0.5"
   }
 }
