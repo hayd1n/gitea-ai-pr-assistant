@@ -7,7 +7,7 @@ A lightweight, robust Fastify webhook server that integrates Google Gemini AI wi
 - **🤖 AI PR Summary**: Automatically generates a concise summary of the Pull Request based on the git diff, helping reviewers understand the changes quickly.
 - **🏷️ PR Title Suggestion**: Evaluates the original PR title against the [Conventional Commits](https://www.conventionalcommits.org/) specification and the actual code changes. Suggests a better title if the original one is inadequate.
 - **🚥 Built-in Task Queue**: Uses an in-memory task queue to process AI requests sequentially, preventing you from hitting API rate limits if multiple PRs are updated simultaneously.
-- **⌨ Chat Commands**: Trigger summaries and title suggestions manually via PR comments with a customizable bot prefix and file exclusion parameters.
+- **⌨ Chat Commands & PR Body Config**: Trigger summaries and title suggestions manually via PR comments with a customizable bot prefix. Automatically ignore specific files from AI logic easily via PR body descriptions (`AI Exclude: ...`).
 - **🛠 Fully Customizable Prompts**: Automatically generates editable prompt and template files upon first run, allowing you to tweak the AI's behavior and formatting without changing the source code.
 - **🔍 Queue Monitoring**: Provides a dedicated endpoint to inspect currently processing and queued tasks.
 - **⚙️ Feature Toggles**: Easily enable or disable specific AI functions via environment variables.
@@ -103,6 +103,15 @@ Example:
 ```
 
 *Note: Always use backticks (\`) around your patterns to prevent Gitea's Markdown parser from accidentally interpreting asterisks (`*`) as italics.*
+
+**Default Exclusions in PR Body**
+If you want to apply default exclusions to all AI actions on a specific PR, you can add a visible line in the Pull Request description (body). The bot will detect lines containing `AI Exclude:` or `AI-Exclude:`:
+
+```markdown
+> **AI Exclude**: `*.lock, tests/*, *.png`
+```
+
+The bot will automatically detect this and merge it with any commands you supply via PR comments.
 
 ## Customizing Prompts & Templates
 

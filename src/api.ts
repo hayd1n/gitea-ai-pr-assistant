@@ -264,12 +264,14 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
       Type.Object({
         number: Type.Number(),
         title: Type.Optional(Type.String()),
+        body: Type.Optional(Type.String()),
       })
     ),
     issue: Type.Optional(
       Type.Object({
         number: Type.Number(),
         title: Type.Optional(Type.String()),
+        body: Type.Optional(Type.String()),
         pull_request: Type.Optional(Type.Any()),
       })
     ),
@@ -311,12 +313,14 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
       if (isPrSyncOrOpened || isPrCommentCreated) {
         let prIndex = request.body?.pull_request?.number;
         let prTitle = request.body?.pull_request?.title;
+        let prBody = request.body?.pull_request?.body;
         const repoOwner = request.body?.repository?.owner?.username;
         const repoName = request.body?.repository?.name;
 
         if (isPrCommentCreated) {
           prIndex = request.body?.issue?.number;
           prTitle = request.body?.issue?.title;
+          prBody = request.body?.issue?.body;
         }
 
         if (!prIndex || !repoOwner || !repoName) {
@@ -332,7 +336,22 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
         let triggerSuggestion = isPrSyncOrOpened
           ? enablePrTitleSuggestion
           : false;
-        let excludeFiles: string[] | undefined = undefined;
+
+        let baseExcludeFiles: string[] = [];
+        if (prBody) {
+          const bodyExcludeMatch = prBody.match(
+            /AI[- ]Exclude[\s*:]*`?([^`\n\r]+)`?/i
+          );
+          if (bodyExcludeMatch && bodyExcludeMatch[1]) {
+            baseExcludeFiles = bodyExcludeMatch[1]
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+          }
+        }
+
+        let excludeFiles: string[] | undefined =
+          baseExcludeFiles.length > 0 ? [...baseExcludeFiles] : undefined;
 
         if (isPrCommentCreated) {
           const commentBody = request.body?.comment?.body || "";
@@ -359,13 +378,18 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
             commanded = true;
             const extraArgs = summaryMatch[1]?.trim();
             if (extraArgs && extraArgs.startsWith("--exclude ")) {
-              excludeFiles = extraArgs
+              const commandExcludes = extraArgs
                 .slice(10)
                 .trim()
                 .replace(/^`|`$/g, "")
                 .split(",")
                 .map((s) => s.trim())
                 .filter(Boolean);
+              if (commandExcludes.length > 0) {
+                excludeFiles = Array.from(
+                  new Set([...(excludeFiles || []), ...commandExcludes])
+                );
+              }
             }
           }
 
@@ -376,13 +400,18 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
             const extraArgs = suggestMatch[1]?.trim();
             // If both commands are present (unlikely), excludeFiles might be overwritten by the second match
             if (extraArgs && extraArgs.startsWith("--exclude ")) {
-              excludeFiles = extraArgs
+              const commandExcludes = extraArgs
                 .slice(10)
                 .trim()
                 .replace(/^`|`$/g, "")
                 .split(",")
                 .map((s) => s.trim())
                 .filter(Boolean);
+              if (commandExcludes.length > 0) {
+                excludeFiles = Array.from(
+                  new Set([...(excludeFiles || []), ...commandExcludes])
+                );
+              }
             }
           }
 
