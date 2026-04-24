@@ -29,6 +29,7 @@ export interface ApiOptions {
   prSummaryCommentPrefix?: string;
   prTitleSuggestionCommentPrefix?: string;
   botCommandPrefix?: string;
+  maxDiffLengthPerFile?: number;
 }
 
 export const ApiOptionsDefaults = {
@@ -39,6 +40,7 @@ export const ApiOptionsDefaults = {
   prSummaryCommentPrefix: "AI_PR_SUMMARY",
   prTitleSuggestionCommentPrefix: "AI_PR_TITLE_SUGGESTION",
   botCommandPrefix: "@ai-bot",
+  maxDiffLengthPerFile: 150000,
 };
 
 export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
@@ -55,6 +57,7 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
     prSummaryCommentPrefix = ApiOptionsDefaults.prSummaryCommentPrefix,
     prTitleSuggestionCommentPrefix = ApiOptionsDefaults.prTitleSuggestionCommentPrefix,
     botCommandPrefix = ApiOptionsDefaults.botCommandPrefix,
+    maxDiffLengthPerFile = ApiOptionsDefaults.maxDiffLengthPerFile,
   } = options;
 
   const typedFastify = fastify.withTypeProvider<TypeBoxTypeProvider>();
@@ -117,7 +120,11 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
           );
 
           const rawDiff = await getPRDiff(gitea, repoOwner, repoName, prIndex);
-          const diff = filterGitDiff(rawDiff, task.excludeFiles);
+          const { filteredDiff: diff, autoExcludedFiles } = filterGitDiff(
+            rawDiff,
+            task.excludeFiles,
+            maxDiffLengthPerFile
+          );
           typedFastify.log.debug(
             { taskId, diffSize: diff.length },
             "Fetched PR diff"
@@ -156,10 +163,19 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
               "Failed to generate PR summary. Please check the logs for details.";
           }
 
-          const finalComment = summaryTemplate
+          let finalComment = summaryTemplate
             .replace("{{summary}}", prSummary)
             .replace("{{date}}", new Date().toISOString())
             .replace("{{triggerSource}}", task.triggerSource);
+
+          if (autoExcludedFiles.length > 0) {
+            finalComment += "\n\n---\n";
+            finalComment +=
+              "> **⚠️ Note:** The following large files were ignored by AI to preserve context boundaries:\n";
+            autoExcludedFiles.forEach((file) => {
+              finalComment += `> - \`${file}\`\n`;
+            });
+          }
 
           // Create or update the PR summary comment in Gitea
           await createOrUpdateExistingIssueComment(
@@ -190,7 +206,11 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
           }
 
           const rawDiff = await getPRDiff(gitea, repoOwner, repoName, prIndex);
-          const diff = filterGitDiff(rawDiff, task.excludeFiles);
+          const { filteredDiff: diff, autoExcludedFiles } = filterGitDiff(
+            rawDiff,
+            task.excludeFiles,
+            maxDiffLengthPerFile
+          );
           typedFastify.log.debug(
             { taskId, prTitle: task.prTitle, diffSize: diff.length },
             "Fetched diff for title suggestion"
@@ -220,13 +240,22 @@ export const apiRoutes: FastifyPluginAsync<ApiOptions> = async (
           }
 
           if (suggestion?.suggestModification) {
-            const suggestionComment =
+            let suggestionComment =
               `<!-- ${prTitleSuggestionCommentPrefix} -->\n\n` +
               suggestionTemplate
                 .replace("{{suggestedTitle}}", suggestion.suggestedTitle)
                 .replace("{{reason}}", suggestion.reason)
                 .replace("{{date}}", new Date().toISOString())
                 .replace("{{triggerSource}}", task.triggerSource);
+
+            if (autoExcludedFiles.length > 0) {
+              suggestionComment += "\n\n---\n";
+              suggestionComment +=
+                "> **⚠️ Note:** The following large files were ignored by AI to preserve context boundaries:\n";
+              autoExcludedFiles.forEach((file) => {
+                suggestionComment += `> - \`${file}\`\n`;
+              });
+            }
 
             await createIssueComment(
               gitea,

@@ -41,6 +41,10 @@ if (!BOT_COMMAND_PREFIX) {
   process.exit(1);
 }
 
+const MAX_DIFF_LENGTH_PER_FILE = process.env.MAX_DIFF_LENGTH_PER_FILE
+  ? parseInt(process.env.MAX_DIFF_LENGTH_PER_FILE)
+  : 150000;
+
 // Initialize Gitea API client
 const gitea = giteaApi(GITEA_URL, { token: GITEA_TOKEN });
 
@@ -64,6 +68,7 @@ fastify.register(apiRoutes, {
   enablePrSummary: ENABLE_PR_SUMMARY,
   enablePrTitleSuggestion: ENABLE_PR_TITLE_SUGGESTION,
   botCommandPrefix: BOT_COMMAND_PREFIX,
+  maxDiffLengthPerFile: MAX_DIFF_LENGTH_PER_FILE,
 });
 
 // Get and log Gitea version on startup

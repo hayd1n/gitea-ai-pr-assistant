@@ -7,6 +7,7 @@ A lightweight, robust Fastify webhook server that integrates Google Gemini AI wi
 - **🤖 AI PR Summary**: Automatically generates a concise summary of the Pull Request based on the git diff, helping reviewers understand the changes quickly.
 - **🏷️ PR Title Suggestion**: Evaluates the original PR title against the [Conventional Commits](https://www.conventionalcommits.org/) specification and the actual code changes. Suggests a better title if the original one is inadequate.
 - **🚥 Built-in Task Queue**: Uses an in-memory task queue to process AI requests sequentially, preventing you from hitting API rate limits if multiple PRs are updated simultaneously.
+- **🛡 Large File Protection**: Automatically identifies and ignores excessively large diff changes (threshold scalable via config) to prevent crashing the LLM's context limits. Summaries will display an explicit note if files were skipped.
 - **⌨ Chat Commands & PR Body Config**: Trigger summaries and title suggestions manually via PR comments with a customizable bot prefix. Automatically ignore specific files from AI logic easily via PR body descriptions (`AI Exclude: ...`).
 - **🛠 Fully Customizable Prompts**: Automatically generates editable prompt and template files upon first run, allowing you to tweak the AI's behavior and formatting without changing the source code.
 - **🔍 Queue Monitoring**: Provides a dedicated endpoint to inspect currently processing and queued tasks.
@@ -53,6 +54,7 @@ GEMINI_MODEL="gemma-4-31b-it" # Optional
 ENABLE_PR_SUMMARY=true
 ENABLE_PR_TITLE_SUGGESTION=true
 BOT_COMMAND_PREFIX="@ai-bot"   # Default prefix to trigger bot via comments
+MAX_DIFF_LENGTH_PER_FILE=150000 # Max character length per file in git diff before the file is excluded from AI context
 ```
 
 ## Usage
